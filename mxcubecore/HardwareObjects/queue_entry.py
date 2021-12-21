@@ -598,13 +598,12 @@ class DataCollectionQueueEntry(BaseQueueEntry):
     def execute(self):
         BaseQueueEntry.execute(self)
         data_collection = self.get_data_model()
-        print('queue_entry about to launch collect_dc, in execute()')
         if data_collection:
             acq_params = data_collection.acquisitions[0].acquisition_parameters
             cpos = acq_params.centred_position
-
-            empty_cpos = all(mpos is None for mpos in cpos.as_dict().values())
-
+            
+            empty_cpos = any(mpos is None for mpos in cpos.as_dict().values())
+            
             if empty_cpos and data_collection.center_before_collect:
                 _p, _s = center_before_collect(
                     self.get_view(),
@@ -754,7 +753,10 @@ class DataCollectionQueueEntry(BaseQueueEntry):
 
                 empty_cpos = queue_model_objects.CentredPosition()
                 if cpos != empty_cpos:
-                    HWR.beamline.sample_view.select_shape_with_cpos(cpos)
+                    #HWR.beamline.sample_view.select_shape_with_cpos(cpos)
+                    pos_dict = HWR.beamline.diffractometer.get_positions()
+                    cpos = queue_model_objects.CentredPosition(pos_dict)
+                    acq_1.acquisition_parameters.centred_position = cpos
                 else:
                     pos_dict = HWR.beamline.diffractometer.get_positions()
                     cpos = queue_model_objects.CentredPosition(pos_dict)
@@ -1033,17 +1035,17 @@ class CharacterisationQueueEntry(BaseQueueEntry):
                 collection_plan = None
 
             if collection_plan:
-                if char.auto_add_diff_plan:
-                    # default action
-                    self.handle_diffraction_plan(self.edna_result, None)
-                else:
-                    collections = HWR.beamline.characterisation.dc_from_output(
-                        self.edna_result, char.reference_image_collection
-                    )
-                    char.diffraction_plan.append(collections)
-                    HWR.beamline.queue_model.emit(
-                        "diff_plan_available", (char, collections)
-                    )
+                #if char.auto_add_diff_plan:
+                    ## default action
+                    #self.handle_diffraction_plan(self.edna_result, None)
+                #else:
+                    #collections = HWR.beamline.characterisation.dc_from_output(
+                        #self.edna_result, char.reference_image_collection
+                    #)
+                    #char.diffraction_plan.append(collections)
+                    #HWR.beamline.queue_model.emit(
+                        #"diff_plan_available", (char, collections)
+                    #)
 
                 self.get_view().setText(1, "Done")
             else:
@@ -1837,7 +1839,7 @@ def center_before_collect(view, dm, queue, sample_view):
     queue.pause(True)
     pos, shape = None, None
 
-    if len(sample_view.get_selected_shapes()):
+    if len(sample_view.get_selected_shapes()) == 1:
         shape = sample_view.get_selected_shapes()[0]
         pos = shape.mpos()
     else:
