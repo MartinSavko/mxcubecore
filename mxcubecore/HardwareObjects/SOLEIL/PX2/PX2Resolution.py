@@ -34,7 +34,7 @@ class PX2Resolution(AbstractResolution):
     def is_ready(self):
         return True
 
-    def update_distance(self, value):
+    def update_distance(self, value=None):
         """Update the resolution when distance changed.
         Args:
             value (float): Detector distance [mm].
