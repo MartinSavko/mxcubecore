@@ -932,19 +932,16 @@ class PX2Diffractometer(GenericDiffractometer):
         Descript. :
         """
         c = centred_positions_dict
-
-        # self.log.info('motor_positions_to_screen c %s ' % str(c))
-
-        # kappa = self.current_motor_positions["kappa"]
-        # phi = self.current_motor_positions["kappa_phi"]
-        self.log.info("centred_positions_dict %s" % str(centred_positions_dict))
+        aligned_position = self.goniometer.get_aligned_position()
+        
+        centred_positions_dict = self.translate_from_md2_to_mxcube(aligned_position)
         try:
             for key in c:
                 if c[key] is None:
                     try:
                         c[key] = self.motor_hwobj_dict[key].get_value()
                     except Exception:
-                        # self.log.info('motor_positions_to_screen exception key %s' % key)
+                        self.log.info('motor_positions_to_screen exception key %s' % key)
                         self.log.info(traceback.format_exc())
 
             if "kappa" in c and c["kappa"] is None:
@@ -959,37 +956,18 @@ class PX2Diffractometer(GenericDiffractometer):
             else:
                 c["kappa_phi"] = self.goniometer.get_phi_position()
 
-            if "beam_x" in c and c["beam_x"] in [0.0, None]:
-                c["beam_x"] = 0.0  # self.beam_position[0]
-            else:
-                c["beam_x"] = 0.0  # self.beam_position[0]
+            c["beam_x"] = 0.
+            c["beam_y"] = 0.
 
-            if "beam_y" not in c and c["beam_y"] in [0.0, None]:
-                c["beam_y"] = 0.0  # self.beam_position[1]
-            else:
-                c["beam_y"] = 0.0  # self.beam_position[1]
-
-            # self.log.info('motor_positions_to_screen c2 %s ' % str(c))
-
-            if (c["kappa"], c["kappa_phi"]) != (
-                self.goniometer.get_kappa_position(),
-                self.goniometer.get_phi_position(),
-            ) and self.minikappa_correction_hwobj is not None:
-                self.log.info("calculating minikappa correction")
-                (
-                    c["sampx"],
-                    c["sampy"],
-                    c["phiy"],
-                ) = self.minikappa_correction_hwobj.shift(
-                    c["kappa"],
-                    c["kappa_phi"],
-                    [c["sampx"], c["sampy"], c["phiy"]],
-                    c["kappa"],
-                    c["kappa_phi"],
-                )
-
+            sanitized_centred_positions_dict = {}
+            for key in c:
+                if not np.isnan(c[key]):
+                    sanitized_centred_positions_dict[key] = c[key]
+                else:
+                    sanitized_centred_positions_dict[key] = 0.
+            c = sanitized_centred_positions_dict
+                
             xy = self.centring_hwobj.centringToScreen(c)
-            # self.log.info('xy %s' % xy)
 
             if xy:
                 x = (xy["X"] + c["beam_x"]) * self.pixels_per_mm_x + self.zoom_centre[
@@ -998,8 +976,10 @@ class PX2Diffractometer(GenericDiffractometer):
                 y = (xy["Y"] + c["beam_y"]) * self.pixels_per_mm_y + self.zoom_centre[
                     "y"
                 ]
-                return x, y
+                return int(x), int(y)
         except Exception:
+            self.log.info('motor_positions_to_screen exception key %s' % key)
+            self.log.info(traceback.format_exc())
             return 0, 0
 
     def move_to_centred_position(self, centred_position):
@@ -1140,6 +1120,10 @@ class PX2Diffractometer(GenericDiffractometer):
         if self.chan_fast_shutter_is_open is not None:
             self.chan_fast_shutter_is_open.set_value(not self.fast_shutter_is_open)
 
+    def get_snapshot(self, shape=None):
+        if HWR.beamline.sample_view:
+            return HWR.beamline.sample_view.take_snapshot()
+        
     def find_loop(self):
         """
         Description:
@@ -1348,7 +1332,7 @@ class PX2Diffractometer(GenericDiffractometer):
         scan_length=0.1,
         step=90.0,
         start=0.0,
-        base_directory="/nfs/data2/excenter'",
+        base_directory="/nfs/data2/excenter",
         name_pattern="excenter",
     ):
 
@@ -1356,7 +1340,7 @@ class PX2Diffractometer(GenericDiffractometer):
 
         angles = str(tuple(np.arange(start, 360.0, step)))
 
-        execute_line = '/usr/local/experimental_methods/diffraction_tomography.py -d %s -n %s -l %.2f -a "%s" &' % (
+        execute_line = '/usr/local/experimental_methods/diffraction_tomography.py -d %s -n %s -y %.2f -a "%s" -A -C -D &' % (
             directory,
             name_pattern,
             scan_length,
@@ -1467,3 +1451,25 @@ class PX2Diffractometer(GenericDiffractometer):
 
     def set_collecting(self, collecting=True):
         self.collecting = collecting
+        
+
+    def align_from_single_image(self, n_views=2):
+        self.log.info('align_from_single_image, n_views %d' % n_views)
+        for k in range(n_views):
+            self.log.info('align_from_single_image, n_view %d' % k)
+            if k == n_views-1:
+                self.camera.align_from_single_image(generate_report=False, turn=False)
+            else:
+                self.camera.align_from_single_image(generate_report=False)
+                
+    def get_positions(self):
+        positions = self.goniometer.get_aligned_position()
+        self.current_motor_positions = self.translate_from_md2_to_mxcube(positions)
+        self.current_motor_positions["beam_x"] = (self.beam_position[0] - \
+             self.zoom_centre['x'] )/self.pixels_per_mm_y
+        self.current_motor_positions["beam_y"] = (self.beam_position[1] - \
+             self.zoom_centre['y'] )/self.pixels_per_mm_x
+        return self.current_motor_positions
+    
+    def has_kappa(self):
+        return self.goniometer.has_kappa()
