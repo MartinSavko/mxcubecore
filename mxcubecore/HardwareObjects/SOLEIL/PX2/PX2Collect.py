@@ -142,6 +142,8 @@ class PX2Collect(AbstractCollect):
         fileinfo = parameters["fileinfo"]
         sample_reference = parameters['sample_reference']
         experiment_type = parameters['experiment_type'] 
+        if experiment_type == 'OSC' and osc_seq['num_triggers'] > 1:
+            experiment_type = 'Characterization'
         energy = parameters['energy']
         if energy < 1.e3:
             energy *= 1.e3
@@ -178,7 +180,7 @@ class PX2Collect(AbstractCollect):
         
         name_pattern = template[:-8]
         
-        #self.log.info('PX2Collect experiment_type: %s' % (experiment_type,))
+        self.log.info('PX2Collect experiment_type: %s' % (experiment_type,))
           
         if experiment_type == 'OSC':
             self.emit("progressInit", ("Collection", 100, False))
@@ -219,24 +221,31 @@ class PX2Collect(AbstractCollect):
         elif experiment_type == 'Characterization':
             self.emit("progressInit", ("Characterization", 100, False))
             self.log.debug('PX2Collect: executing reference_images')
-            number_of_wedges = osc_seq['number_of_images']
+            if osc_seq['num_triggers'] != 0:
+                number_of_wedges = osc_seq['num_triggers']
+            else:
+                number_of_wedges = osc_seq['number_of_images']
             try:
-                wedge_size = osc_seq['range']
+                wedge_size = osc_seq['num_images_per_trigger']
             except KeyError:
                 wedge_size = 10
             try:
                 range_per_frame_ref = osc_seq['range_per_frame']
             except KeyError:
-                range_per_frame_ref = 0.1
+                range_per_frame_ref = float(osc_seq['range']) #/wedge_size
             angle_per_frame = range_per_frame_ref
-            number_of_images = wedge_size/angle_per_frame
+            number_of_images = wedge_size 
             
-            #overlap = osc_seq['overlap']
-            overlap = -90 + wedge_size
+            try:
+                overlap = osc_seq['overlap']
+            except:
+                overlap = -90 + wedge_size
             
             scan_start_angles = []
             scan_exposure_time = exposure_time * number_of_images
-            scan_range = angle_per_frame * number_of_images
+            
+            scan_range = range_per_frame_ref * wedge_size
+            #scan_range = angle_per_frame * number_of_images
             
             for k in range(number_of_wedges):
                 scan_start_angles.append(scan_start_angle + k * -overlap + k * scan_range)

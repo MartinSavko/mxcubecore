@@ -270,7 +270,7 @@ class AbstractCollect(HardwareObject, object):
 
     def _collection_failed(self, cp, ex_type, ex_value, ex_stacktrace):
         """Collection failed method"""
-        failed_msg = "Data collection failed!\n%s" % exc_value
+        failed_msg = "Data collection failed!\n%s" % ex_value
 
         cp.dangerously_set("status", "Failed")
         cp.dangerously_set("comments", "%s\n%s" % (failed_msg, self._error_msg))
@@ -468,6 +468,8 @@ class AbstractCollect(HardwareObject, object):
         """
         Descript. :
         """
+
+        #cp = self.current_dc_parameters
         log.info("Collection: Updating data collection in LIMS")
 
         if HWR.beamline.lims and not cp["in_interleave"]:
@@ -515,6 +517,7 @@ class AbstractCollect(HardwareObject, object):
         """
         Descript. :
         """
+        #cp = self.current_dc_parameters
         if HWR.beamline.lims and not cp["in_interleave"]:
             file_location = cp["fileinfo"]["directory"]
             image_file_template = cp["fileinfo"]["template"]
