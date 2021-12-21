@@ -1,4 +1,6 @@
-<object class="SOLEILISPyBClient">
+<!-- <object class="SOLEILISPyBClient"> -->
+<object class="ISPyBClientMockup">
+
     <proxy>http://172.19.43.1:8080</proxy>
 
     <ws_username>abc</ws_username>
@@ -16,7 +18,7 @@
     <!--connectionTimeout>360</connectionTimeout-->
     <authServerType>ldap</authServerType>
     <loginType>proposal</loginType>
-    <ispyb_identifiers_location>/home/experiences/proxima2a/com-proxima2a/ispyb_identifiers</ispyb_identifiers_location>
+    <ispyb_identifiers_location>/etc/ispyb_identifiers</ispyb_identifiers_location>
     <!--<loginType>user</loginType> -->
     <!--session-->
     <!--loginTranslate>True</loginTranslate-->

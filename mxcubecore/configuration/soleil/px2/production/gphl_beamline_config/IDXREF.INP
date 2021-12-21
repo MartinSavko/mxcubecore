@@ -5,7 +5,7 @@
 ! http://xds.mpimf-heidelberg.mpg.de/html_doc/INPUT_templates/XDS-PILATUS.INP
 ! DETECTOR=PILATUS
 ! OVERLOAD=1048500
-
+ LIB= /data/bioxsoft/progs/XDS/LIB/dectris-neggia_0p4.so
 ! Recommended by clemens, http://confluence.globalphasing.com/display/autoPROC/Shadows+for+Thaumatin2+data?focusedCommentId=10588412#comment-10588412
  MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT= 4
  SEPMIN=	4

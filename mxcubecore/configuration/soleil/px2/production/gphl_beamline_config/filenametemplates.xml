@@ -52,7 +52,7 @@ The following restrictions must be adhered to:
 >
 
     <c:filenamePattern xsi:type="c:FilenamePattern">
-        <exid>GDA</exid>
+        <exid>Beamline</exid>
         
         <element xsi:type="tet:Parameter">
         <maxWidth>43</maxWidth>
@@ -75,9 +75,9 @@ The following restrictions must be adhered to:
         </element>
 
         <element xsi:type="tet:ImageNumberMask">
-            <maxWidth>4</maxWidth>
+            <maxWidth>6</maxWidth>
             <minWidth>
-                <width>4</width>
+                <width>6</width>
                 <leftJustify>false</leftJustify>
                 <padding>0</padding>
             </minWidth>
@@ -313,8 +313,8 @@ The following restrictions must be adhered to:
         </entry>
         
         <mapsFrom>interleaved</mapsFrom>
-        <mapsTo>GDA</mapsTo>
-        
+        <mapsTo>Beamline</mapsTo>
+
     </c:filenamePatternMapping>
 
     <c:filenamePatternMapping xsi:type="c:FilenamePatternMapping">
@@ -332,8 +332,8 @@ The following restrictions must be adhered to:
         </entry>
         
         <mapsFrom>ib_interleaved</mapsFrom>
-        <mapsTo>GDA</mapsTo>
-        
+        <mapsTo>Beamline</mapsTo>
+
     </c:filenamePatternMapping>
 
     <c:filenamePatternMapping xsi:type="c:FilenamePatternMapping">
@@ -351,8 +351,8 @@ The following restrictions must be adhered to:
         </entry>
         
         <mapsFrom>generic</mapsFrom>
-        <mapsTo>GDA</mapsTo>
-        
+        <mapsTo>Beamline</mapsTo>
+
     </c:filenamePatternMapping>
 
     <c:filenamePatternMapping xsi:type="c:FilenamePatternMapping">
@@ -370,7 +370,7 @@ The following restrictions must be adhered to:
         </entry>
         
         <mapsFrom>multiorientation</mapsFrom>
-        <mapsTo>GDA</mapsTo>
+        <mapsTo>Beamline</mapsTo>
         
     </c:filenamePatternMapping>
 
