@@ -1757,10 +1757,7 @@ class QtGraphicsManager(AbstractSampleView):
             )
             self.emit("infoMsg", "3 click centring")
         else:
-            # self.accept_centring()
-            self.diffractometer_hwobj.start_move_to_beam(
-                self.beam_position[0], self.beam_position[1]
-            )
+            self.accept_centring()
 
     def accept_centring(self):
         """Accepts centring
@@ -2332,3 +2329,13 @@ class QtGraphicsManager(AbstractSampleView):
             self.graphics_view.setVerticalScrollBarPolicy(
                 qt_import.Qt.ScrollBarAlwaysOff
             )
+    
+    def realign_beam(self):
+        self.diffractometer_hwobj.beam_position_check()
+
+    def anneal(self, time=1.):
+        self.diffractometer_hwobj.anneal(time=time)
+
+    def excenter(self, scan_length=0.1, step=90.):
+        self.diffractometer_hwobj.excenter(scan_length, step)
+        
