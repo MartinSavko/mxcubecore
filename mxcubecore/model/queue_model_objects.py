@@ -342,10 +342,11 @@ class Sample(TaskNode):
             display_name += " (%s)" % self.lims_code
         if self.get_name():
             display_name = self.get_name()
+        display_name = display_name.strip("-")
         return display_name
 
-    def init_from_sc_sample(self, sc_sample):
-        self.loc_str = str(sc_sample[1]) + ":" + str(sc_sample[2])
+    def init_from_sc_sample(self, sc_sample, separator="_"):
+        self.loc_str = str(sc_sample[1]) + separator + str(sc_sample[2])
         self.location = (sc_sample[1], sc_sample[2])
 
         self.set_name(self.loc_str)
@@ -354,7 +355,7 @@ class Sample(TaskNode):
         else:
             self.set_name(self.loc_str)
 
-    def init_from_lims_object(self, lims_sample):
+    def init_from_lims_object(self, lims_sample, separator="_"):
         if hasattr(lims_sample, "cellA"):
             self.crystals[0].cell_a = lims_sample.cellA
             self.processing_parameters.cell_a = lims_sample.cellA
@@ -459,7 +460,7 @@ class Sample(TaskNode):
         self.lims_location = _lims
         self.location = _lims
 
-        self.loc_str = str(self.lims_location[0]) + ":" + str(self.lims_location[1])
+        self.loc_str = str(self.lims_location[0]) + separator + str(self.lims_location[1])
 
         if hasattr(lims_sample, "containerCode"):
             self.container_code = str(lims_sample.containerCode)
@@ -470,7 +471,16 @@ class Sample(TaskNode):
             self.diffraction_plan = lims_sample.diffractionPlan
         else:
             self.diffraction_plan = lims_sample.get("diffractionPlan")
-        self.set_name(HWR.beamline.session.get_default_prefix(self))
+
+        name = ""
+
+        if self.crystals[0].protein_acronym:
+            name += self.crystals[0].protein_acronym
+
+        if self.name:
+            name += "-" + self.name
+
+        self.set_name(name)
 
     def set_from_dict(self, p):
         self.code = p.get("code", "")
@@ -541,12 +551,21 @@ class Basket(TaskNode):
             if len(self.location) == 2:
                 self.name = "Cell %d, puck %d" % self.location
             elif len(self.location) == 1:
-                self.name = "%s %s" % (name, self.location[0])
+                self.name = "%s: %s" % (self.location[0], name)
             else:
-                self.name = "%s %s" % (name, self.location)
+                self.name = "%s: %s" % (self.location, name)
 
     def get_name(self):
         return self.name
+
+    def set_name(self, name):
+        self.name = str(name)
+        loc = self.location[0]
+        name = name.strip('%s: ' % loc)
+        _name = name
+        self.dewar_content.set_puck_name(int(loc), name)
+        self.name = name
+        self._name = _name
 
     def get_location(self):
         return self.location
@@ -1163,6 +1182,9 @@ class XRFSpectrum(TaskNode):
     def set_count_time(self, count_time):
         self.count_time = count_time
 
+    def set_excitation_energy(self, excitation_energy):
+        self.excitation_energy = excitation_energy
+
     def is_collected(self):
         return self.is_executed()
 
@@ -1550,7 +1572,17 @@ class PathTemplate(object):
         return prefix
 
     def get_image_file_name(self, suffix=None):
-        file_name = HWR.beamline.detector.get_image_file_name(self)
+        if self.precision != '0':
+            template = "%s_%s_%%" + str(self.precision) + "d.%s"
+        else:
+            template = "%s_%s_%s"
+        if suffix:
+            file_name = template % (self.get_prefix(), self.run_number, suffix)
+        else:
+            file_name = template % (self.get_prefix(), self.run_number, self.suffix)
+        if self.compression:
+            file_name = "%s.gz" % file_name
+
         return file_name
 
     def get_image_path(self):
@@ -1605,6 +1637,8 @@ class PathTemplate(object):
             logging.getLogger("HWR").debug(
                 "PathTemplate (ALBA) - archive_directory is %s" % archive_directory
             )
+        elif HWR.beamline.session.synchrotron_name == "SOLEIL":
+            archive_directory = self.directory.replace('RAW_DATA', 'ARCHIVE')
         else:
             directory = self.directory[len(PathTemplate.base_directory) :]
             folders = directory.split("/")
@@ -1868,6 +1902,7 @@ class CentredPosition(object):
         self.centring_method = True
         self.index = None
         self.motor_pos_delta = CentredPosition.MOTOR_POS_DELTA
+        self.log = logging.getLogger("HWR")
 
         for motor_name in CentredPosition.DIFFRACTOMETER_MOTOR_NAMES:
             setattr(self, motor_name, None)
@@ -1878,15 +1913,17 @@ class CentredPosition(object):
             self.set_diffractometer_motor_names(list(motor_dict.keys()))
 
     def as_dict(self):
-        return dict(
-            zip(
-                CentredPosition.DIFFRACTOMETER_MOTOR_NAMES,
-                [
-                    getattr(self, motor_name)
-                    for motor_name in CentredPosition.DIFFRACTOMETER_MOTOR_NAMES
-                ],
-            )
-        )
+        self.log.info(f"CentredPosition.DIFFRACTOMETER_MOTOR_NAMES {CentredPosition.DIFFRACTOMETER_MOTOR_NAMES}")
+
+        ad = {}
+        try:
+            for motor_name in CentredPosition.DIFFRACTOMETER_MOTOR_NAMES:
+                if hasattr(self, motor_name):
+                    ad[motor_name] = getattr(self, motor_name)
+        except:
+            import traceback
+            traceback.print_exc()
+        return ad
 
     def set_from_dict(self, params_dict):
         for dict_item in params_dict.items():
@@ -1904,21 +1941,23 @@ class CentredPosition(object):
         return str(self.as_dict())
 
     def __eq__(self, cpos):
-        eq = len(CentredPosition.DIFFRACTOMETER_MOTOR_NAMES) * [False]
+        eq = []
         for i, motor_name in enumerate(CentredPosition.DIFFRACTOMETER_MOTOR_NAMES):
-            self_pos = getattr(self, motor_name)
-            if not hasattr(cpos, motor_name):
+
+            if not hasattr(cpos, motor_name) or not hasattr(self, motor_name) :
                 continue
-            else:
-                cpos_pos = getattr(cpos, motor_name)
+
+            self_pos = getattr(self, motor_name)
+            cpos_pos = getattr(cpos, motor_name)
 
             if self_pos == cpos_pos is None:
-                eq[i] = True
+                eq.append(True)
             elif None in (self_pos, cpos_pos):
                 continue
             else:
-                eq[i] = abs(self_pos - cpos_pos) <= self.motor_pos_delta
-        return all(eq)
+                eq.append(abs(self_pos - cpos_pos) <= self.motor_pos_delta)
+
+        return bool(eq) and all(eq)
 
     def __ne__(self, cpos):
         return not (self == cpos)
