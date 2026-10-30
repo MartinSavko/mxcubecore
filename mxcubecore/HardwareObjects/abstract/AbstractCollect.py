@@ -83,7 +83,7 @@ class AbstractCollect(HardwareObject, object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, name) -> None:
-        HardwareObject.__init__(self, name)
+        super().__init__(name)
 
         self.bl_config = BeamlineConfig(*[None] * 18)
 
