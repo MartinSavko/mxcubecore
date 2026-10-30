@@ -86,9 +86,12 @@ class Session(HardwareObject):
         if not archive_folder:
             archive_folder = default_archive_folder
 
-        self.in_house_users = [
-            (prop["code"], str(prop["number"])) for prop in get_inhouse_proposals()
-        ]
+        try:
+            self.in_house_users = [
+                (prop["code"], str(prop["number"])) for prop in get_inhouse_proposals()
+            ]
+        except KeyError:
+            pass
 
         self.set_base_data_directories(
             file_info["base_directory"],
@@ -146,10 +149,7 @@ class Session(HardwareObject):
         directory = ""
 
         if self.session_start_date:
-            # start_time = self.session_start_date.split(" ")[0].replace("-", "")
-            start_time = (
-                self.session_start_date
-            )  # .strftime("%Y%m%d")  # .split(" ")[0].replace("-", "")
+            start_time = self.session_start_date.split(" ")[0].replace("-", "")
         else:
             start_time = time.strftime("%Y%m%d")
 
