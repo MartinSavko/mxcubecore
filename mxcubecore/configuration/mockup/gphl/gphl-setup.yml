@@ -6,7 +6,8 @@ class: mxcubecore.HardwareObjects.Gphl.GphlWorkflowConnection.GphlWorkflowConnec
 configuration:
   directory_locations:
     # Directory locations. Can also be used with ${} syntax in this file
-    GPHL_INSTALLATION: /home/rhfogh/Software/GPhL/gphl_release
+    #GPHL_INSTALLATION: /home/rhfogh/Software/GPhL/gphl_release
+    GPHL_INSTALLATION: /nfs/data2/Martin/Research/GPhL/2026-05-19
     # GPHL_INSTALLATION:
     #   /home/rhfogh/Software/GPhL/nightly_20230823/Files_workflow_TRUNK_alpha-bdg
     # GPHL_INSTALLATION:
@@ -49,11 +50,13 @@ configuration:
 
     # MANDATORY for CCP4 => $GPHL_CCP4_PATH/bin/ccp4.setup-sh,
     # unless already sourced in environment
-    GPHL_CCP4_PATH: /home/rhfogh/Software/CCP4/latest/bin/
+    #GPHL_CCP4_PATH: /home/rhfogh/Software/CCP4/latest/bin/
+    GPHL_CCP4_PATH: /data/bioxsoft/bin
 
     # MANDATORY for XDS => $GPHL_XDS_PATH/xds_par
     # unless already sourced in environment
-    GPHL_XDS_PATH: /home/rhfogh/Software/XDS/latest/
+    #GPHL_XDS_PATH: /home/rhfogh/Software/XDS/latest/
+    GPHL_XDS_PATH: /usr/local/bioxsoft_local/bin
 
     # gphl test samples directory - for collection emulation
     gphl_test_samples: gphl/test_samples
@@ -89,6 +92,7 @@ configuration:
 
     # OPTIONAL. simcal *binary* For Mock collection emulation only. Not used by workflow
     co.gphl.wf.simcal.bin:
-      /home/rhfogh/Software/GPhL/nightly_20260519/Files_workflow_TRUNK_alpha-bdg/autoPROC/bin/linux64/simcal
-    co.gphl.wf.simcal.bdg_licence_dir:
-      /home/rhfogh/Software/GPhL/nightly_20260519/Files_workflow_TRUNK_alpha-bdg
+      #/home/rhfogh/Software/GPhL/nightly_20260519/Files_workflow_TRUNK_alpha-bdg/autoPROC/bin/linux64/simcal
+      /opt/gphl/20220128/GPhL-WF-beta-academic-20220127/20220127/autoPROC/bin/linux64/simcal
+    #co.gphl.wf.simcal.bdg_licence_dir:
+      #/home/rhfogh/Software/GPhL/nightly_20260519/Files_workflow_TRUNK_alpha-bdg
