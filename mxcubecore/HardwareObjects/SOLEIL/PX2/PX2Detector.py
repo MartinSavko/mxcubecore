@@ -27,7 +27,7 @@ from speaking_beam_center import speaking_beam_center as beam_center
 class PX2Detector(DetectorMockup):
 
     def __init__(self, name):
-        super().__init__(self, name)
+        super().__init__(name)
 
     def init(self):
         super().init()
