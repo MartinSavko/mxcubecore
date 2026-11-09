@@ -20,6 +20,7 @@
 
 import logging
 import os
+import sys
 import time
 import gevent
 import pickle
@@ -60,6 +61,8 @@ from useful_routines import (
 )
 
 try:
+    sys.path.insert(0, "/usr/local/experimental_methods")
+
     from goniometer import goniometer
     from detector import detector
     from oav_camera import oav_camera as camera
