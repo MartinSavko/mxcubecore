@@ -130,3 +130,6 @@ class DiffractometerMockup(AbstractDiffractometer):
 
     def user_confirms_centring(self):
         return False
+
+    def manual_centring(self):
+        return self.get_positions()
