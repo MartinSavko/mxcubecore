@@ -353,6 +353,18 @@ class QtGraphicsManager(SampleView):
             self.cursor = qt_import.Qt.ArrowCursor
 
     @property
+    def zoom(self):
+        """zoom motor object
+
+        NBNB HACK TODO - configure this here instead
+        (instead of calling to diffractometer)
+
+        Returns:
+            AbstractActuator
+        """
+        return self.diffractometer_hwobj.zoom
+
+    @property
     def focus(self):
         """focus motor object
 
@@ -725,7 +737,7 @@ class QtGraphicsManager(SampleView):
         :type centring_status: dict
         :emits: centringInProgress
         """
-        print(f"create_centring_point, state: {centring_state}, status: {centring_status}")
+        logging.getLogger("GUI").debug(f"create_centring_point, state: {centring_state}, status: {centring_status}")
         p_dict = {}
 
         if "motors" in centring_status and "extraMotors" in centring_status:
@@ -733,12 +745,12 @@ class QtGraphicsManager(SampleView):
         elif "motors" in centring_status:
             p_dict = dict(centring_status["motors"])
 
-        print(f"p_dict {p_dict}")
+        logging.getLogger("GUI").debug(f"p_dict {p_dict}")
         self.emit("centringInProgress", False)
 
         if p_dict:
             cpos = queue_model_objects.CentredPosition(p_dict)
-            print(f"cpos {cpos.as_dict()}")
+            logging.getLogger("GUI").debug(f"cpos {cpos.as_dict()}")
             screen_pos = self.motor_positions_to_screen(
                 cpos.as_dict()
             )
@@ -807,7 +819,7 @@ class QtGraphicsManager(SampleView):
         :param pixels_per_mm: two floats for scaling
         :type pixels_per_mm: list with two floats
         """
-        print(f"diffractometer_pixels_per_mm_changed {pixels_per_mm} {optional}")
+        logging.getLogger("GUI").debug(f"diffractometer_pixels_per_mm_changed {pixels_per_mm} {optional}")
 
         if type(pixels_per_mm) in (list, tuple):
             if pixels_per_mm != self.pixels_per_mm:
@@ -906,12 +918,6 @@ class QtGraphicsManager(SampleView):
                     # if isinstance(graphics_item, GraphicsLib.GraphicsItemPoint):
                     #    self.emit("pointSelected", graphics_item)
 
-    def image_clicked(self, x, y):
-        logging.getLogger("user_level_log").info(
-            f"Centring click at x:{x}, y:{y}"
-        )
-        self.diffractometer_hwobj.set_user_click(x, y)
-
     def mouse_double_clicked(self, pos_x, pos_y):
         """If in one of the measuring states, then stops measuring.
            Otherwise moves to screen coordinate
@@ -932,9 +938,6 @@ class QtGraphicsManager(SampleView):
         else:
             self.move_to_beam(pos_x, pos_y)
         self.emit("imageDoubleClicked", pos_x, pos_y)
-
-    def move_to_beam(self, x: float, y: float):
-        self.diffractometer_hwobj.move_to_beam(x, y)
 
     def mouse_released(self, pos_x, pos_y):
         """Mouse release method. Used to finish grid drawing and item
@@ -1739,23 +1742,6 @@ class QtGraphicsManager(SampleView):
             self.move_to_beam(
                 self.beam_position[0], self.beam_position[1]
             )
-
-    def start_manual_centring(self):
-        self.in_centring_state = True
-        self.current_centring_procedure = gevent.spawn(self.diffractometer_hwobj.manual_centring)
-        self.current_centring_procedure.link(self.manual_centring_done)
-
-    def manual_centring_done(self, centring_procedure):
-        try:
-            motor_pos = centring_procedure.get()
-            if isinstance(motor_pos, gevent.GreenletExit):
-                raise motor_pos
-        except Exception:
-            logging.exception("Could not complete manual centring")
-            self.centring_failed()
-        else:
-            print("centring done !")
-            self.centring_done()
 
     def accept_centring(self):
         """Accepts centring"""

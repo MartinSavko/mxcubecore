@@ -19,6 +19,7 @@
 
 import logging
 import copy
+import gevent
 
 from mxcubecore.HardwareObjects.QtGraphicsManager import QtGraphicsManager
 from mxcubecore.HardwareObjects import QtGraphicsLib as GraphicsLib
@@ -47,6 +48,35 @@ class SOLEILQtGraphicsManager(QtGraphicsManager):
                 "diffractometerPhaseChanged",
                 self.diffractometer_phase_changed,
             )
+
+
+    def image_clicked(self, x, y):
+        logging.getLogger("user_level_log").info(
+            f"Centring click at x:{x}, y:{y}"
+        )
+        self.diffractometer_hwobj.set_user_click(x, y)
+
+
+    def move_to_beam(self, x: float, y: float):
+        self.diffractometer_hwobj.move_to_beam(x, y)
+
+
+    def start_manual_centring(self):
+        self.in_centring_state = True
+        self.current_centring_procedure = gevent.spawn(self.diffractometer_hwobj.manual_centring)
+        self.current_centring_procedure.link(self.manual_centring_done)
+
+    def manual_centring_done(self, centring_procedure):
+        try:
+            motor_pos = centring_procedure.get()
+            if isinstance(motor_pos, gevent.GreenletExit):
+                raise motor_pos
+        except Exception:
+            logging.exception("Could not complete manual centring")
+            self.centring_failed()
+        else:
+            print("centring done !")
+            self.centring_done()
 
     def accept_centring(self):
         self.centring_done()
